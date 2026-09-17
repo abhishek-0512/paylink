@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Patient Bill Checkout & Receipt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%22100%22%20%22100%22><text y=%22.9em%22 font-size=%2290%22>🏥</text></svg>">
+  
+  <!-- Official Razorpay Standard Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <style>
+    .pay-container {
+      max-width: 640px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .checkout-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .checkout-header {
+      background: linear-gradient(135deg, #0f172a, #042f2e);
+      padding: 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .checkout-amount-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .checkout-body {
+      padding: 24px;
+    }
+    .order-details-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+    .detail-label {
+      color: var(--text-secondary);
+    }
+    .detail-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .pay-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+    .pay-tab {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .pay-tab.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #10b981;
+    }
+    .pay-tab-content {
+      display: none;
+    }
+    .pay-tab-content.active {
+      display: block;
+    }
+    .upi-qr-card {
+      text-align: center;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+    .upi-qr-card img {
+      width: 190px;
+      height: 190px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 12px;
+      margin: 12px auto;
+      display: block;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    /* Printable Medical Receipt Styles */
+    .receipt-container {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: var(--radius-md);
+      padding: 32px;
+      margin: 20px 0;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      position: relative;
+      font-family: 'Inter', sans-serif;
+    }
+    .receipt-watermark {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 4rem;
+      font-weight: 800;
+      color: rgba(16, 185, 129, 0.12);
+      border: 6px dashed rgba(16, 185, 129, 0.25);
+      padding: 10px 30px;
+      border-radius: 12px;
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: 4px;
+    }
+    .receipt-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .receipt-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .receipt-sub {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+    .receipt-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.88rem;
+    }
+    .receipt-table th {
+      background: #f8fafc;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid #e2e8f0;
+      color: #475569;
+      font-weight: 600;
+    }
+    .receipt-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .receipt-total-row {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-top: 2px solid #0f172a;
+    }
+    .receipt-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.82rem;
+      background: #f8fafc;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .receipt-container, .receipt-container * {
+        visibility: visible;
+      }
+      .receipt-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header no-print">
+    <div class="header-container" style="max-width: 640px;">
+      <div class="brand">
+        <div class="brand-icon">🏥</div>
+        <div class="brand-info">
+          <h1>PayVista Healthcare</h1>
+          <span class="brand-badge">256-Bit SSL Encrypted Hospital Portal</span>
+        </div>
+      </div>
+      <a href="/" class="btn btn-outline btn-sm">← Hospital Dashboard</a>
+    </div>
+  </header>
+
+  <div class="pay-container">
+    
+    <!-- Loading State -->
+    <div id="loading-state" style="text-align: center; padding: 60px 0;">
+      <div style="font-size: 2.2rem; margin-bottom: 12px;">⏳</div>
+      <p style="color: var(--text-secondary);">Loading secure patient bill checkout session...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="card" style="display: none; text-align: center; padding: 40px 24px;">
+      <div style="font-size: 3rem; margin-bottom: 16px;">⚠️</div>
+      <h2 style="font-size: 1.25rem; margin-bottom: 8px;">Hospital Payment Link Invalid or Expired</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 20px;" id="error-msg">We couldn't find the requested patient bill details.</p>
+      <a href="/" class="btn btn-primary">Return to Hospital Dashboard</a>
+    </div>
+
+    <!-- Active Checkout Form -->
+    <div id="checkout-view" class="checkout-card" style="display: none;">
+      <div class="checkout-header">
+        <div>
+          <div style="font-size: 0.78rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Total Bill Amount</div>
+          <div class="checkout-amount-pill" id="checkout-amount">₹0.00</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.78rem; color: #94a3b8;">Patient UHID / Bill #</div>
+          <div style="font-weight: 600; color: #fff;" id="checkout-invoice">UHID-0000</div>
+        </div>
+      </div>
+
+      <div class="checkout-body">
+        <div class="order-details-box">
+          <div class="detail-row">
+            <span class="detail-label">Patient Name</span>
+            <span class="detail-value" id="checkout-customer">Patient</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">WhatsApp Phone</span>
+            <span class="detail-value" id="checkout-phone">+91 00000 00000</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Hospital Department</span>
+            <span class="detail-value" id="checkout-dept" style="color: #38bdf8;">General OPD</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Treatment & Services</span>
+            <span class="detail-value" id="checkout-desc">Medical Consultation</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Payment Status</span>
+            <span class="detail-value">
+              <span class="badge badge-pending">Payment Pending</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Payment Method Tabs -->
+        <div class="pay-tabs">
+          <button class="pay-tab active" data-tab="razorpay">💳 Razorpay Gateway (Cards/UPI/Netbanking)</button>
+          <button class="pay-tab" data-tab="demo">⚡ Instant Demo Pay</button>
+        </div>
+
+        <!-- Razorpay Gateway Tab -->
+        <div class="pay-tab-content active" id="tab-razorpay">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); padding: 18px; text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 1.8rem; margin-bottom: 8px;">💳</div>
+            <h3 style="font-size: 1rem; color: #10b981; margin-bottom: 6px;">Pay via Razorpay Secure Gateway</h3>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px;">
+              Supports Google Pay, PhonePe, Paytm, BHIM UPI, Visa/Mastercard/Rupay Cards, Netbanking & Wallets.
+            </p>
+            <button class="btn btn-primary btn-block btn-lg" id="btn-razorpay-pay" style="background: linear-gradient(135deg, #0284c7, #0369a1); font-weight: 700;">
+              <span>💳 Launch Razorpay Payment Gateway</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Demo Simulator Tab -->
+        <div class="pay-tab-content" id="tab-demo">
+          <div class="upi-qr-card" style="margin-bottom: 16px;">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Simulate payment without Razorpay API keys:</p>
+            <img id="checkout-qr-img" src="" alt="Payment QR Code">
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" id="btn-pay-now">
+            <span>⚡ Complete Demo Simulation Payment</span>
+          </button>
+        </div>
+
+        <div style="text-align: center; margin-top: 16px; font-size: 0.75rem; color: var(--text-muted);">
+          🔒 Guaranteed 256-Bit SSL Encrypted & HIPAA Compliant Healthcare Gateway
+        </div>
+      </div>
+    </div>
+
+    <!-- Success & Receipt View (Shown after payment) -->
+    <div id="success-view" class="checkout-card" style="display: none; padding: 24px;">
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10b981; color: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 12px;">✓</div>
+        <h2 style="font-size: 1.4rem; color: #10b981; margin-bottom: 4px;">Hospital Bill Paid Successfully!</h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">Official medical payment receipt generated below.</p>
+      </div>
+
+      <!-- Printable Official Hospital Receipt Card -->
+      <div class="receipt-container" id="printable-receipt">
+        <div class="receipt-watermark">PAID</div>
+        
+        <div class="receipt-header">
+          <div>
+            <div class="receipt-title">PAYVISTA HEALTHCARE</div>
+            <div class="receipt-sub">Official Hospital Medical Payment Receipt</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 700; color: #0f172a;" id="receipt-invoice-num">#UHID-2026-001</div>
+            <div class="receipt-sub" id="receipt-date">-</div>
+          </div>
+        </div>
+
+        <div class="receipt-meta-grid">
+          <div>
+            <span style="color: #64748b; display: block;">Patient Name:</span>
+            <strong id="receipt-customer">-</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block;">WhatsApp Phone:</span>
+            <strong id="receipt-phone">-</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block;">Hospital Department:</span>
+            <strong style="color: #0284c7;" id="receipt-dept">General OPD</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block;">Razorpay / Txn Ref:</span>
+            <strong style="color: #0284c7;" id="receipt-txnid">TXN-000000</strong>
+          </div>
+          <div style="grid-column: span 2;">
+            <span style="color: #64748b; display: block;">Payment Gateway Mode:</span>
+            <strong id="receipt-method">Razorpay Online Gateway</strong>
+          </div>
+        </div>
+
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Medical Services / Treatment Breakdown</th>
+              <th style="text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="receipt-item-desc">Hospital Consultation & Services</td>
+              <td style="text-align: right; font-weight: 600;" id="receipt-item-amount">₹0.00</td>
+            </tr>
+            <tr class="receipt-total-row">
+              <td>Total Amount Paid:</td>
+              <td style="text-align: right; color: #10b981;" id="receipt-total-amount">₹0.00</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top: 20px; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span>✓ Verified Medical Electronic Receipt</span>
+          <span>Status: <strong>PAID & CONFIRMED</strong></span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+        
+        <!-- Download / Print Button -->
+        <button class="btn btn-primary btn-block btn-lg" id="btn-download-receipt">
+          <span>📥 Download / Print Hospital Receipt (PDF)</span>
+        </button>
+
+        <!-- WhatsApp Receipt Trigger -->
+        <button class="btn btn-whatsapp btn-block" id="btn-send-wa-receipt">
+          <span>💬 Send Hospital Receipt to Patient's WhatsApp</span>
+        </button>
+
+        <a href="/" class="btn btn-outline btn-block">
+          <span>← Back to Hospital Dashboard</span>
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const pathParts = window.location.pathname.split('/');
+    const linkId = pathParts[pathParts.length - 1];
+
+    let currentLinkData = null;
+    let receiptUrls = null;
+
+    async function loadPaymentDetails() {
+      try {
+        const res = await fetch(`/api/payment-links/${linkId}`);
+        const result = await res.json();
+
+        document.getElementById('loading-state').style.display = 'none';
+
+        if (!result.success || !result.data) {
+          document.getElementById('error-state').style.display = 'block';
+          return;
+        }
+
+        currentLinkData = result.data;
+        renderCheckout();
+      } catch (err) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('error-state').style.display = 'block';
+      }
+    }
+
+    function renderCheckout() {
+      if (currentLinkData.status === 'PAID') {
+        showSuccessView(currentLinkData);
+        return;
+      }
+
+      document.getElementById('checkout-view').style.display = 'block';
+      const formattedAmount = `${currentLinkData.currencySymbol}${Number(currentLinkData.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${currentLinkData.currency || 'INR'}`;
+      
+      document.getElementById('checkout-amount').textContent = formattedAmount;
+      document.getElementById('checkout-invoice').textContent = currentLinkData.invoiceNumber;
+      document.getElementById('checkout-customer').textContent = currentLinkData.customerName;
+      document.getElementById('checkout-phone').textContent = `+${currentLinkData.customerPhone}`;
+      document.getElementById('checkout-dept').textContent = currentLinkData.department || 'General OPD';
+      document.getElementById('checkout-desc').textContent = currentLinkData.description;
+
+      if (currentLinkData.qrCodeDataUrl) {
+        document.getElementById('checkout-qr-img').src = currentLinkData.qrCodeDataUrl;
+      }
+    }
+
+    function showSuccessView(data) {
+      document.getElementById('checkout-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+
+      const formattedAmount = `${data.currencySymbol || '₹'}${Number(data.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${data.currency || 'INR'}`;
+      const formattedDate = new Date(data.paidAt || Date.now()).toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+
+      // Populate Receipt
+      document.getElementById('receipt-invoice-num').textContent = `#${data.invoiceNumber}`;
+      document.getElementById('receipt-date').textContent = formattedDate;
+      document.getElementById('receipt-customer').textContent = data.customerName;
+      document.getElementById('receipt-phone').textContent = `+${data.customerPhone}`;
+      document.getElementById('receipt-dept').textContent = data.department || 'General OPD';
+      document.getElementById('receipt-txnid').textContent = data.transactionId || 'pay_rzp_' + Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('receipt-method').textContent = data.paymentMethod || 'Razorpay Online Gateway';
+      document.getElementById('receipt-item-desc').textContent = data.description;
+      document.getElementById('receipt-item-amount').textContent = formattedAmount;
+      document.getElementById('receipt-total-amount').textContent = formattedAmount;
+
+      if (data.receiptUrls) {
+        receiptUrls = data.receiptUrls;
+      }
+    }
+
+    // Payment Tab switching
+    document.querySelectorAll('.pay-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.pay-tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // Launch Official Razorpay Standard Checkout Popup Modal
+    document.getElementById('btn-razorpay-pay').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-razorpay-pay');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Preparing Razorpay Checkout...</span>';
+
+      try {
+        const orderRes = await fetch(`/api/payment-links/${linkId}/create-razorpay-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const orderResult = await orderRes.json();
+
+        if (!orderResult.success) {
+          alert('Razorpay Order Error: ' + orderResult.error);
+          btn.disabled = false;
+          btn.innerHTML = '<span>💳 Launch Razorpay Payment Gateway</span>';
+          return;
+        }
+
+        if (!orderResult.keyId || orderResult.keyId.includes('sample') || orderResult.keyId.includes('mock')) {
+          alert('Razorpay Key ID is not configured on the server. Switching to Instant Demo Pay mode.');
+          document.querySelector('.pay-tab[data-tab="demo"]')?.click();
+          btn.disabled = false;
+          btn.innerHTML = '<span>💳 Launch Razorpay Payment Gateway</span>';
+          return;
+        }
+
+        const options = {
+          key: orderResult.keyId,
+          amount: orderResult.amount,
+          currency: orderResult.currency,
+          name: 'PayVista Healthcare',
+          description: orderResult.description || 'Hospital Medical Bill',
+          order_id: orderResult.orderId || undefined,
+          prefill: {
+            name: orderResult.patientName,
+            contact: orderResult.patientPhone
+          },
+          theme: {
+            color: '#10b981'
+          },
+          handler: async function (response) {
+            btn.innerHTML = '<span>⏳ Verifying Payment Signature...</span>';
+
+            const verifyRes = await fetch(`/api/payment-links/${linkId}/verify-razorpay-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                paymentMethod: 'Razorpay Gateway (Cards/UPI/Netbanking)'
+              })
+            });
+
+            const verifyResult = await verifyRes.json();
+            if (verifyResult.success) {
+              showSuccessView(verifyResult.data);
+            } else {
+              alert('Payment Signature Verification Failed: ' + verifyResult.error);
+              btn.disabled = false;
+              btn.innerHTML = '<span>💳 Launch Razorpay Payment Gateway</span>';
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              btn.disabled = false;
+              btn.innerHTML = '<span>💳 Launch Razorpay Payment Gateway</span>';
+            }
+          }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+
+      } catch (err) {
+        alert('Network error connecting to Razorpay: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<span>💳 Launch Razorpay Payment Gateway</span>';
+      }
+    });
+
+    // Instant Demo Simulation Pay Button Click
+    document.getElementById('btn-pay-now').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-pay-now');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Processing Payment...</span>';
+
+      try {
+        const res = await fetch(`/api/payment-links/${linkId}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentMethod: 'Instant Demo Pay (UPI Simulator)' })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          showSuccessView(result.data);
+        } else {
+          alert('Error completing payment: ' + result.error);
+          btn.disabled = false;
+          btn.innerHTML = '<span>⚡ Complete Demo Simulation Payment</span>';
+        }
+      } catch (err) {
+        alert('Network error while processing payment');
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Complete Demo Simulation Payment</span>';
+      }
+    });
+
+    // Download / Print Receipt Button
+    document.getElementById('btn-download-receipt').addEventListener('click', () => {
+      window.print();
+    });
+
+    // WhatsApp Receipt Button
+    document.getElementById('btn-send-wa-receipt').addEventListener('click', () => {
+      if (receiptUrls && receiptUrls.waMeUrl) {
+        window.open(receiptUrls.waMeUrl, '_blank');
+      } else {
+        const cleanPhone = currentLinkData.customerPhone;
+        const msg = encodeURIComponent(`🏥 *HOSPITAL PAYMENT RECEIPT CONFIRMED!*\n\nHi *${currentLinkData.customerName}*, your payment of *${currentLinkData.currencySymbol}${currentLinkData.amount}* for *${currentLinkData.description}* (UHID Bill #${currentLinkData.invoiceNumber}) was successful via Razorpay! Wish you good health! 💙`);
+        window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+      }
+    });
+
+    loadPaymentDetails();
+  </script>
+</body>
+</html>
+
