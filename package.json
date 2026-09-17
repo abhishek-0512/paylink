@@ -1,0 +1,36 @@
+{
+  "name": "payment-link-whatsapp-trigger",
+  "version": "1.0.0",
+  "description": "Zero-document payment link generator with automated and instant WhatsApp triggers",
+  "main": "payment-link-app/backend/src/server.js",
+  "scripts": {
+    "dev": "npm --prefix payment-link-app/frontend run dev",
+    "build": "npm --prefix payment-link-app/frontend install && npm --prefix payment-link-app/frontend run build",
+    "start": "node payment-link-app/backend/src/server.js",
+    "frontend": "npm --prefix payment-link-app/frontend run dev",
+    "backend": "npm --prefix payment-link-app/backend run start",
+    "legacy": "node server.js"
+  },
+  "keywords": [
+    "payment",
+    "whatsapp",
+    "payment-link",
+    "razorpay",
+    "fintech"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.1",
+    "mongoose": "^8.9.3",
+    "pdfkit": "^0.16.0",
+    "qrcode": "^1.5.4",
+    "razorpay": "^2.9.8",
+    "uuid": "^11.1.0"
+  }
+}
