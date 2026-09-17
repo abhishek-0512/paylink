@@ -1,0 +1,34 @@
+{
+  "name": "payment-link-backend",
+  "version": "1.0.0",
+  "description": "Backend service for payment link generation, Razorpay checkout, WhatsApp Cloud API, and PDF receipts",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "payment",
+    "razorpay",
+    "whatsapp",
+    "pdfkit",
+    "express",
+    "mongoose"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.1",
+    "mongoose": "^8.9.3",
+    "pdfkit": "^0.16.0",
+    "razorpay": "^2.9.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
