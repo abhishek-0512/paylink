@@ -9,7 +9,9 @@ const logger = require('../utils/logger');
  */
 const createPaymentLink = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, customerEmail = '', amount, description, gateway, triggerWhatsApp = true } = req.body;
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    const dynamicBaseUrl = host && !host.includes('localhost:5001') ? `${proto}://${host}` : null;
 
     const { payment, keyId } = await paymentService.createPayment({
       customerName,
@@ -17,7 +19,8 @@ const createPaymentLink = async (req, res, next) => {
       customerEmail,
       amount: Number(amount),
       description,
-      gateway
+      gateway,
+      baseUrl: dynamicBaseUrl
     });
 
     let whatsappResult = null;

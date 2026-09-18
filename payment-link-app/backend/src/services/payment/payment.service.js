@@ -23,11 +23,13 @@ class PaymentService {
     customerEmail,
     amount,
     description = '',
-    gateway = 'razorpay'
+    gateway = 'razorpay',
+    baseUrl = null
   }) {
     const paymentId = generatePaymentId();
     const formattedPhone = formatPhoneNumber(customerPhone);
-    const paymentLink = `${config.urls.frontend}/pay/${paymentId}`;
+    const origin = baseUrl || config.urls.frontend;
+    const paymentLink = `${origin}/pay/${paymentId}`;
 
     const provider = PaymentFactory.getProvider(gateway);
 
