@@ -2,7 +2,6 @@
   "name": "payment-link-whatsapp-trigger",
   "version": "1.0.0",
   "description": "Zero-document payment link generator with automated and instant WhatsApp triggers",
-  "main": "payment-link-app/backend/src/server.js",
   "scripts": {
     "dev": "npm --prefix payment-link-app/frontend run dev",
     "build": "npm --prefix payment-link-app/frontend install && npm --prefix payment-link-app/frontend run build",
